@@ -1,0 +1,77 @@
+import tkinter as tk
+from PIL import Image, ImageTk
+import speech_recognition as sr
+import pyttsx3
+from langdetect import detect
+import time
+
+def listen_to_speech():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = recognizer.listen(source)
+        try:
+            return recognizer.recognize_google(audio)
+        except (sr.UnknownValueError, sr.RequestError):
+            print("Error recognizing speech.")
+            return ""
+
+def detect_language(text):
+    try:
+        return detect(text)
+    except:
+        return "unknown"
+
+def generate_response(text, language):
+    return f"Tensor go: {text}" if language == "hi" else f"Tensor go: {text}"
+
+def audio_response(response):
+    engine = pyttsx3.init()
+    voices = engine.getProperty('voices')
+    lang_voice = next((v for v in voices if 'hi' in v.languages), None) if 'hi' in response else next((v for v in voices if 'en' in v.languages), None)
+    if lang_voice:
+        engine.setProperty('voice', lang_voice.id)
+    engine.setProperty('rate', 150)
+    engine.setProperty('volume', 1.0)
+    engine.say(response)
+    engine.runAndWait()
+
+def start_listening():
+   
+    listen_button.config(image=icon_listening)
+    status_label.config(text="Listening...")
+    root.update() 
+    text = listen_to_speech()
+    if text.lower() in ["exit", "quit", "stop"]:
+        print("Exiting...")
+        root.quit()
+    else:
+        language = detect_language(text)
+        print(f"Detected language: {language}")
+        response = generate_response(text, language)
+        print(f"Response: {response}")
+        audio_response(response)
+    listen_button.config(image=icon_normal)
+    status_label.config(text="Click the button to start listening again.")
+    time.sleep(1)
+
+root = tk.Tk()
+root.title("Speech-To-Speech LLM Bot")
+
+try:
+    image_normal = Image.open(r"C:\Users\Varun\OneDrive\Desktop\voice_icon.png").resize((50, 50), Image.ANTIALIAS)
+    image_listening = Image.open(r"C:\Users\Varun\OneDrive\Desktop\OIP.jpg").resize((50, 50), Image.ANTIALIAS)
+    
+    icon_normal = ImageTk.PhotoImage(image_normal)
+    icon_listening = ImageTk.PhotoImage(image_listening)
+
+    listen_button = tk.Button(root, image=icon_normal, command=start_listening)
+    listen_button.pack(pady=10)
+ 
+    status_label = tk.Label(root, text="Click the button to start listening")
+    status_label.pack(pady=10)
+
+except tk.TclError as e:
+    print("Error loading image:", e)
+
+root.mainloop()
